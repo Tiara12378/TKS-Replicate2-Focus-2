@@ -32,10 +32,12 @@ for step in range(num_transitions):
     next_x, next_y = next_state
     
     # store input and target
-    inputs.append([x, y, action])
+    action_one_hot = [0, 0, 0, 0]
+    action_one_hot[action] = 1 
+    inputs.append([x, y] + action_one_hot) 
     targets.append([next_x, next_y])
     
-    # update current state
+    # update current state 
     state = next_state
 
 # 5. convert to numpy arrays
