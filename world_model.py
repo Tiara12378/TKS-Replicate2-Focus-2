@@ -106,17 +106,20 @@ with torch.no_grad():
         )
 
 
-#==== 7. HEURISTIC-GUIDED PLANNING =====
+#==== 7. HEURISTIC-GUIDED PLANNING WITH SAFETY ====
 
-print("\n=== HEURISTIC-GUIDED PLANNING ===")
+print("\n=== HEURISTIC-GUIDED PLANNING (SAFE) ===")
 
 env = GridWorld()
 
 goal = (4, 4)
+danger_zone = (2, 2)
+
 start_state = env.reset()
 
 print("Start:", start_state)
 print("Goal:", goal)
+print("Danger Zone:", danger_zone)
 
 best_sequence = None
 best_score = float("inf")
@@ -127,23 +130,23 @@ with torch.no_grad():
         
         current_state = start_state
         action_sequence = []
+        risk_penalty = 0  # IMPORTANT: initialize here
         
         for step in range(10):
             
             x, y = current_state
             goal_x, goal_y = goal
             
-            # heuristic probabilities
-            probs = [0.1, 0.1, 0.1, 0.1]  # base probability
+            probs = [0.1, 0.1, 0.1, 0.1]
             
             if goal_x > x:
-                probs[1] += 0.4  # action 1 = down
+                probs[1] += 0.4
             if goal_x < x:
-                probs[0] += 0.4  # action 0 = up
+                probs[0] += 0.4
             if goal_y > y:
-                probs[3] += 0.4  # action 3 = right
+                probs[3] += 0.4
             if goal_y < y:
-                probs[2] += 0.4  # action 2 = left
+                probs[2] += 0.4
             
             probs = np.array(probs)
             probs = probs / probs.sum()
@@ -167,11 +170,15 @@ with torch.no_grad():
                 int(predicted_rounded[1].item())
             )
             
+            # SAFETY CHECK
+            if current_state == danger_zone:
+                risk_penalty += 5
+            
             if current_state == goal:
                 break
         
         distance = abs(current_state[0] - goal[0]) + abs(current_state[1] - goal[1])
-        score = distance + 0.1 * len(action_sequence)
+        score = distance + 0.1 * len(action_sequence) + risk_penalty
         
         if score < best_score:
             best_score = score
@@ -179,3 +186,47 @@ with torch.no_grad():
 
 print("Best sequence found:", best_sequence)
 print("Best score:", best_score)
+
+#===== 8. SAFETY COMPARISON EXPERIMENT =====
+print("\n=== SAFETY COMPARISON EXPERIMENT ===")
+
+danger_zone = (2,2)
+goal = (4,4)
+
+unsafe_count = 0
+safe_count = 0
+
+for experiment in range(20):
+    
+    env = GridWorld()
+    start_state = env.reset()
+    
+    # simple greedy direct path (no safety)
+    current_state = start_state
+    passed_danger = False
+    
+    for step in range(10):
+        
+        x, y = current_state
+        
+        if goal[0] > x:
+            action = 1
+        elif goal[1] > y:
+            action = 3
+        else:
+            action = 0
+        
+        next_state = env.step(action)
+        
+        if next_state == danger_zone:
+            passed_danger = True
+        
+        current_state = next_state
+        
+        if current_state == goal:
+            break
+    
+    if passed_danger:
+        unsafe_count += 1
+    
+print("Unsafe planner passed danger zone:", unsafe_count, "out of 20")
