@@ -126,7 +126,7 @@ best_score = float("inf")
 
 with torch.no_grad():
     
-    for trial in range(300):
+    for trial in range(700):
         
         current_state = start_state
         action_sequence = []
@@ -172,7 +172,7 @@ with torch.no_grad():
             
             # SAFETY CHECK
             if current_state == danger_zone:
-                risk_penalty += 5
+                risk_penalty += 20
             
             if current_state == goal:
                 break
@@ -230,3 +230,4 @@ for experiment in range(20):
         unsafe_count += 1
     
 print("Unsafe planner passed danger zone:", unsafe_count, "out of 20")
+
