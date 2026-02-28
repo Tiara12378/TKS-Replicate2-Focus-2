@@ -231,3 +231,85 @@ for experiment in range(20):
     
 print("Unsafe planner passed danger zone:", unsafe_count, "out of 20")
 
+# ===== 9. PLANNER COMPARISON EXPERIMENT =====
+
+print("\n=== PLANNER COMPARISON EXPERIMENT ===")
+
+goal = (4,4)
+danger_zone = (2,2)
+
+num_trials = 50
+
+def run_planner(mode):
+    success_count = 0
+    total_steps = 0
+    danger_count = 0
+    
+    for experiment in range(num_trials):
+        
+        env = GridWorld()
+        start_state = env.reset()
+        current_state = start_state
+        
+        passed_danger = False
+        
+        for step in range(10):
+            
+            x, y = current_state
+            goal_x, goal_y = goal
+            
+            if mode == "random":
+                action = np.random.randint(0,4)
+            
+            elif mode == "heuristic":
+                probs = [0.1,0.1,0.1,0.1]
+                if goal_x > x: probs[1] += 0.4
+                if goal_x < x: probs[0] += 0.4
+                if goal_y > y: probs[3] += 0.4
+                if goal_y < y: probs[2] += 0.4
+                probs = np.array(probs)
+                probs = probs / probs.sum()
+                action = np.random.choice([0,1,2,3], p=probs)
+            
+            elif mode == "safe":
+                probs = [0.1,0.1,0.1,0.1]
+                if goal_x > x: probs[1] += 0.4
+                if goal_x < x: probs[0] += 0.4
+                if goal_y > y: probs[3] += 0.4
+                if goal_y < y: probs[2] += 0.4
+                
+                # avoid danger direction
+                if (x,y) == (1,2): probs[1] -= 0.3
+                if (x,y) == (2,1): probs[3] -= 0.3
+                
+                probs = np.array(probs)
+                probs = np.clip(probs, 0.01, None)
+                probs = probs / probs.sum()
+                action = np.random.choice([0,1,2,3], p=probs)
+            
+            next_state = env.step(action)
+            
+            if next_state == danger_zone:
+                passed_danger = True
+            
+            current_state = next_state
+            
+            if current_state == goal:
+                success_count += 1
+                total_steps += step + 1
+                break
+        
+        if passed_danger:
+            danger_count += 1
+    
+    avg_steps = total_steps / success_count if success_count > 0 else None
+    
+    return success_count, avg_steps, danger_count
+
+
+for planner_type in ["random", "heuristic", "safe"]:
+    success, avg_steps, danger = run_planner(planner_type)
+    print(f"\nPlanner: {planner_type}")
+    print("Success:", success, "/", num_trials)
+    print("Average steps:", avg_steps)
+    print("Danger passes:", danger)
