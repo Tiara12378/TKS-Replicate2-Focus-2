@@ -90,4 +90,5 @@ Model-based reinforcement learning — learned world models, planning in imagina
 AI safety — constraint-aware planning, danger avoidance without sacrificing capability
 Intrinsic motivation / curiosity-driven learning — future direction: replacing the heuristic with learned uncertainty or novelty signals
 
-- Built as part of TKS (The Knowledge Society) Focus Project 2.
+
+Built as part of TKS (The Knowledge Society) Focus Project 2.
